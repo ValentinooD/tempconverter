@@ -1,0 +1,59 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build and run integration tests
+    runs-on: ubuntu-latest
+
+    # App depends on database so we setup database
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: tempconv-root
+          MYSQL_DATABASE: tempconv
+          MYSQL_USER: tempconv
+          MYSQL_PASSWORD: tempconv
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    # Steps for testing
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies and testing tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run Integration Tests
+        env:
+          PYTHONPATH: .
+          DB_HOST: 127.0.0.1
+          DB_USER: tempconv
+          DB_PASS: tempconv
+          DB_NAME: tempconv
+        run: |
+          pytest tests/test.py
+
+      - name: Build image
+        run: |
+          docker build -f Containerfile -t tempconverter:ci-test
+
+
+
+

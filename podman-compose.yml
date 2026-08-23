@@ -1,0 +1,37 @@
+services:
+  tempconv-db:
+    container_name: tempconv-db
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root-secret-password
+      MYSQL_DATABASE: tempconv
+      MYSQL_USER: tempconv
+      MYSQL_PASSWORD: tempconv
+    networks:
+      - tempconv-net
+    volumes:
+      - ./data:/var/lib/mysql
+
+  tempconv-app:
+    container_name: tempconv-app
+    image: docker.io/valend/tempconverter:latest
+    restart: on-failure
+    ports:
+      - '8080:5000'
+    environment:
+      DB_USER: tempconv
+      DB_PASS: tempconv
+      DB_HOST: tempconv-db
+      DB_NAME: tempconv
+      STUDENT: 'Valentino Divjak'
+      COLLEGE: 'Algebra Bernays University'
+    networks:
+      - tempconv-net
+    depends_on:
+      - tempconv-db
+
+networks:
+  tempconv-net:
+    driver: bridge
+
