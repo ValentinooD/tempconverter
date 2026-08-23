@@ -52,7 +52,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -f Containerfile -t tempconverter:ci-test
+          docker build -f Containerfile -t tempconverter:ci-test .
 
 
 
