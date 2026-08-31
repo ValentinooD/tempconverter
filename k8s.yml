@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempconv-db-svc
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: tempconv-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempconv-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tempconv-db
+  template:
+    metadata:
+      labels:
+        app: tempconv-db
+    spec:
+      containers:
+      - name: tempconv-db
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: 'root-secret-password'
+        - name: MYSQL_DATABASE
+          value: 'tempconv'
+        - name: MYSQL_USER
+          value: 'tempconv'
+        - name: MYSQL_PASSWORD
+          value: 'tempconv'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tempconv-app-svc
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5000
+  selector:
+    app: tempconv-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tempconv-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tempconv-app
+  template:
+    metadata:
+      labels:
+        app: tempconv-app
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - tempconv-app
+            topologyKey: 'kubernetes.io/hostname'
+      containers:
+      - name: tempconv-app
+        image: valend/tempconverter:latest
+        env:
+        - name: DB_HOST
+          value: 'tempconv-db-svc'
+        - name: DB_USER
+          value: 'tempconv'
+        - name: DB_PASS
+          value: 'tempconv'
+        - name: DB_NAME
+          value: 'tempconv'
+        - name: STUDENT
+          value: 'Valentino Divjak'
+        - name: COLLEGE
+          value: 'Algebra Bernays University'
